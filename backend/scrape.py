@@ -7,7 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
 
-# from datetime probably for cache?
 # to activate venv use .venv\Scripts\activate
 from flask import Flask
 
@@ -27,8 +26,6 @@ def index(userSearch):
             return json.loads(animeSearch)
     
     searchPlus = search.replace(" ", "+")
-
-    # also if the anime doesnt have a score yet
 
     # MAL---------------------------------------------
 
@@ -55,7 +52,7 @@ def index(userSearch):
 
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "html.parser")
-    scoreMAL = soup.find("div", {"class": "score-label"}).get_text()
+    scoreMAL = soup.find("div", {"class": "score-label"}).get_text() + "/10"
     print(scoreMAL)
 
 
@@ -65,16 +62,12 @@ def index(userSearch):
     print(searchUrl)
 
     options = webdriver.ChromeOptions()
-    # stops the browser from appearing
     # this headless thing is broke for anilist ._. use default for now (check xvfb)
     # maybe something like --disable-extensions or running all at the same time for efficiency
-    options.add_argument("--headless=new")
+    # stops the browser from appearing
+    # options.add_argument("--headless=new")
     driver = webdriver.Chrome(options=options)
     driver.get(searchUrl)
-
-    scroll_count = 5
-    for _ in range(scroll_count):
-        driver.find_element(By.TAG_NAME,'body').send_keys(Keys.END)
 
     time.sleep(2)
     page_source = driver.page_source
@@ -82,7 +75,6 @@ def index(userSearch):
     driver.quit()
 
     link = soup.find("div", {"class" : "media-card"})
-    print(link)
     scoreAnilist = "N/A"
     if link:
         link = link.find('a').get('href')
@@ -97,22 +89,20 @@ def index(userSearch):
 
         data = soup.find("div", {"class" : "el-tooltip data-set"})
         if data:
-            scoreAnilist = data.find("div", {"class" : "value"}).get_text() + "/10"
+            scoreAnilist = data.find("div", {"class" : "value"}).get_text()
     print(scoreAnilist)
-    return {}
+
     # Livechart-------------------------------------------------------------
+    
     searchUrl = "https://www.livechart.me/search?q=" + searchPlus 
     print(searchUrl)
 
-    options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
     driver = webdriver.Chrome(options=options)
 
     driver.get(searchUrl)
-    # time.sleep(1)
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, 'html.parser')
-
     driver.quit()
 
     scoreLivechart = "N/A"
@@ -120,7 +110,7 @@ def index(userSearch):
     if table:
         rating = table.find("div", {"class" : "info"})
         if rating.find("span", {"class" : "fake-link"}):
-            scoreLivechart = rating.find("span", {"class" : "fake-link"}).get_text() + "/10"
+            scoreLivechart = rating.find("span", {"class" : "fake-link"}).get_text().strip() + "/10"
     print(scoreLivechart)
 
     res = {"animeImage" : animeImageLink,
